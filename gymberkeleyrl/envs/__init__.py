@@ -1,3 +1,3 @@
 from .gridworldenv import GridworldEnv
-from .pacmanenv import PacmanEnv
+# from .pacmanenv import PacmanEnv
 

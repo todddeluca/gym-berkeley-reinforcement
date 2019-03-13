@@ -19,6 +19,23 @@ from gymberkeleyrl.spaces import ObjectSpace
 # Gym Docs: https://gym.openai.com/docs/
 
 
+class StubDisplayAgent:
+    '''
+    render() expects an agent with certain functions
+    '''
+    # expected by display.displayQValues
+    def getQValue(*args):
+        return 0
+    
+    # expected by display.displayValues
+    def getValue(*args):
+        return 0
+
+    # expected by display.displayValues
+    def getPolicy(*args):
+        return None
+
+    
 class GridworldEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
@@ -78,16 +95,23 @@ class GridworldEnv(gym.Env):
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
-        nextState, reward = self.env.doAction(action)
-        self.state = nextState
+        next_state, reward = self.env.doAction(action)
+        self.state = next_state
         self.action_space = ObjectSpace(self.env.getPossibleActions(self.state))
-        done = len(self.action_space) # done if no legal actions
+        done = (len(self.action_space) == 0) # done if no legal actions
         
-        return (nextState, reward, done, {})
+        return (next_state, reward, done, {})
 
-    def render(self, mode='human'):
+    def render(self, mode='human', agent=None):
         '''
         For humans, visualize something. For others, return data.
         '''
-        self.display(self.state)
+        if agent is None:
+            agent = StubDisplayAgent()
+            
+        if 'getQValue' in dir(agent):
+            self.display.displayQValues(agent, self.state, "CURRENT Q-VALUES")
+        else:
+            self.display.displayValues(agent, self.state, "CURRENT VALUES")
+
         self.display.pause()

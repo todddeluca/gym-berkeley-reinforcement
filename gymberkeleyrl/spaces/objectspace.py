@@ -1,3 +1,7 @@
+from gym.spaces import Space
+import numpy as np
+
+
 class ObjectSpace(Space):
     '''
     A gym space defined by a set of objects. 
@@ -10,6 +14,11 @@ class ObjectSpace(Space):
             self.objects = tuple(objects)
         else:
             self.objects = tuple()
+            
+        self.np_random = np.random.RandomState()
+
+    def seed(self, seed):
+        self.np_random.seed(seed)
         
     def sample(self):
         idx = self.np_random.choice(len(self.objects))
@@ -20,5 +29,11 @@ class ObjectSpace(Space):
     
     def __len__(self):
         return len(self.objects)
+    
+    def __repr__(self):
+        return "ObjectSpace(%d)" % self.objects
+
+    def __eq__(self, other):
+        return self.objects == other.objects
     
     

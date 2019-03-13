@@ -1,1 +1,1 @@
-from objectspace import ObjectSpace
+from .objectspace import ObjectSpace

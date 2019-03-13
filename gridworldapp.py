@@ -59,45 +59,45 @@ def parseArgs():
     parser.add_argument('-d', '--discount',
                          type=float, default=0.9,
                          help='Discount on future (default %default)')
-    optParser.add_option('-n', '--noise',
+    parser.add_argument('-n', '--noise',
                          type=float, default=0.2,
                          metavar="P", help='How often action results in unintended direction (default %default)' )
-    optParser.add_option('-e', '--epsilon',
+    parser.add_argument('-e', '--epsilon',
                          type=float, default=0.3,
                          metavar="E", help='Chance of taking a random action in q-learning (default %default)')
-    optParser.add_option('-l', '--learningRate',
+    parser.add_argument('-l', '--learningRate',
                          type=float, default=0.5,
                          metavar="P", help='TD learning rate (default %default)' )
-    optParser.add_option('-i', '--iterations',
+    parser.add_argument('-i', '--iterations',
                          type=int, dest='iters', default=10,
                          metavar="K", help='Number of rounds of value iteration (default %default)')
-    optParser.add_option('-k', '--episodes',
+    parser.add_argument('-k', '--episodes',
                          type=int, default=1,
                          metavar="K", help='Number of epsiodes of the MDP to run (default %default)')
-    optParser.add_option('-g', '--grid',
+    parser.add_argument('-g', '--grid',
                          metavar="G", default="BookGrid", choices=['BookGrid', 'BridgeGrid', 'CliffGrid', 'MazeGrid'],
                          help='Grid to use (case sensitive; options are BookGrid, BridgeGrid, CliffGrid, MazeGrid, default %default)' )
-    optParser.add_option('-w', '--windowSize', metavar="X", type=int, dest='gridSize', default=150,
+    parser.add_argument('-w', '--windowSize', metavar="X", type=int, dest='gridSize', default=150,
                          help='Request a window width of X pixels *per grid cell* (default %default)')
-    optParser.add_option('-a', '--agent', metavar="A",
+    parser.add_argument('-a', '--agent', metavar="A",
                          default="random",
                          help='Agent type (options are \'random\', \'value\' and \'q\', default %default)')
-    optParser.add_option('-t', '--text', action='store_true',
+    parser.add_argument('-t', '--text', action='store_true',
                          dest='textDisplay', default=False,
                          help='Use text-only ASCII display')
-    optParser.add_option('-p', '--pause', action='store_true',
+    parser.add_argument('-p', '--pause', action='store_true',
                          default=False,
                          help='Pause GUI after each time step when running the MDP')
-    optParser.add_option('-q', '--quiet',action='store_true',
+    parser.add_argument('-q', '--quiet',action='store_true',
                          default=False,
                          help='Skip display of any learning episodes')
-    optParser.add_option('-s', '--speed', metavar="S", type=float,
+    parser.add_argument('-s', '--speed', metavar="S", type=float,
                          default=1.0,
                          help='Speed of animation, S > 1.0 is faster, 0.0 < S < 1.0 is slower (default %default)')
-    optParser.add_option('-m', '--manual',action='store_true',
+    parser.add_argument('-m', '--manual',action='store_true',
                          default=False,
                          help='Manually control agent')
-    optParser.add_option('-v', '--valueSteps', action='store_true', default=False,
+    parser.add_argument('-v', '--valueSteps', action='store_true', default=False,
                          help='Display each step of value iteration')
     args = parser.parse_args()
     return args
@@ -107,5 +107,19 @@ def main():
     args = parseArgs()
     env = GridworldEnv(args.grid, args.livingReward, args.noise, args.textDisplay, args.gridSize, args.speed)
     env.reset()
-    env.render()
-#     run(args)    
+    done = False
+    while not done:
+        env.render()
+        if len(env.action_space):
+            action = env.action_space.sample()
+            next_state, reward, done, info = env.step(action) # take a random action
+            print(next_state, reward, done, info)
+        else:
+            raise Exception('not done and no actions')
+            
+#     import time
+#     time.sleep(4)
+#     run(args)  
+
+if __name__ == '__main__':
+    main()
