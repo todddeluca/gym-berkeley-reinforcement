@@ -12,10 +12,11 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-from util import manhattanDistance
-from game import Grid
+from .util import manhattanDistance
+from .game import Grid
 import os
 import random
+from functools import reduce
 
 VISIBILITY_MATRIX_CACHE = {}
 
@@ -66,11 +67,11 @@ class Layout:
         return self.walls[x][col]
 
     def getRandomLegalPosition(self):
-        x = random.choice(range(self.width))
-        y = random.choice(range(self.height))
+        x = random.choice(list(range(self.width)))
+        y = random.choice(list(range(self.height)))
         while self.isWall( (x, y) ):
-            x = random.choice(range(self.width))
-            y = random.choice(range(self.height))
+            x = random.choice(list(range(self.width)))
+            y = random.choice(list(range(self.height)))
         return (x,y)
 
     def getRandomCorner(self):
