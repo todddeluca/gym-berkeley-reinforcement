@@ -1,6 +1,6 @@
 
 # ignore external code
-gymberkeleyrl/reinforcement/
+# gymberkeleyrl/reinforcement/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
