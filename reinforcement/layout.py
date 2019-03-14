@@ -161,11 +161,13 @@ def tryToLoad(fullname):
         try:
             from pkg_resources import resource_stream
             f = resource_stream('reinforcement', fullname)
+            text = f.read().decode()
+            f.close()
         except Exception as e:
             return None
     else:
-        f = open(fullname)
-    try:
-        return Layout([line.strip() for line in f])
-    finally:
-        f.close()
+        with open(fullname) as f:
+            text = f.read()
+            
+    return Layout([line.strip() for line in text.splitlines()])
+
