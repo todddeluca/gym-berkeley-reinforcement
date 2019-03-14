@@ -119,6 +119,13 @@ def parseArgs():
     parser.add_argument('-v', '--valueSteps', action='store_true', default=False,
                          help='Display each step of value iteration')
     args = parser.parse_args()
+    # MANAGE CONFLICTS
+    if args.textDisplay or args.quiet:
+        args.pause = False
+
+    if args.manual:
+        args.pause = True
+        
     return args
 
 
@@ -126,19 +133,13 @@ def main():
     args = parseArgs()
     
     # Make environment
-    env = GridworldEnv(args.grid, args.livingReward, args.noise, args.textDisplay, args.gridSize, args.speed)
+    env = GridworldEnv(args.grid, args.livingReward, args.noise, args.textDisplay,
+                       args.gridSize, args.speed, args.pause)
     
-    curr_state = None
-    def actionFn(state):
-        '''close around env and curr_state'''
-        if state == curr_state:
-            return env.action_space.objects
-        else:
-            # env only supports querying for the actions of the current state
-            # might not work for agents that plan.
-            raise Exception('state != curr_state', state, curr_state)
             
     # Make agent
+    def actionFn(state):
+        return env.getPossibleActions(state)
     agent = None
     if args.manual:
         agent = UserAgent(actionFn=actionFn)
@@ -233,10 +234,10 @@ def main():
     # DISPLAY POST-LEARNING VALUES / Q-VALUES
     if args.agent == 'q' and not args.manual:
         try:
-            display.displayQValues(agent, message = "Q-VALUES AFTER "+str(args.episodes)+" EPISODES")
-            display.pause()
-            display.displayValues(agent, message = "VALUES AFTER "+str(args.episodes)+" EPISODES")
-            display.pause()
+            env.display.displayQValues(agent, message = "Q-VALUES AFTER "+str(args.episodes)+" EPISODES")
+            env.display.pause()
+            env.display.displayValues(agent, message = "VALUES AFTER "+str(args.episodes)+" EPISODES")
+            env.display.pause()
         except KeyboardInterrupt:
             sys.exit(0)
             

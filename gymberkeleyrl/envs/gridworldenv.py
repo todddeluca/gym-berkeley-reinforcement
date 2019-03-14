@@ -39,9 +39,11 @@ class StubDisplayAgent:
 class GridworldEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, grid, livingReward, noise, textDisplay, gridSize, speed):
+    def __init__(self, grid, livingReward, noise, textDisplay, gridSize, speed, pause):
         '''
         '''
+        self.pause = pause
+        
         # initialize mdp and env (code from gridworld.py).
         mdpFunction = getattr(gridworld, "get" + grid)
         self.mdp = mdpFunction() # Used by dynamic programming ValueIterationAgent
@@ -114,16 +116,17 @@ class GridworldEnv(gym.Env):
         else:
             self.display.displayValues(agent, self.state, "CURRENT VALUES")
 
-        self.display.pause()
+        if self.pause:
+            self.display.pause()
 
-#     def getPossibleActions(state):
-#         '''
-#         To be consistent with the berkeley agent interface, 
-#         which expects a function that takes a state and returns a
-#         list of possible actions, this function is added.
+    def getPossibleActions(self, state):
+        '''
+        To be consistent with the berkeley agent interface, 
+        which expects a function that takes a state and returns a
+        list of possible actions, this function is added.
         
-#         Other agents can use the action_space.objects attribute to get the
-#         possible actions for the current environment state.
-#         '''
-#         return self.env.getPossibleActions(self.state)
+        Other agents can use the action_space.objects attribute to get the
+        possible actions for the current environment state.
+        '''
+        return self.env.getPossibleActions(state)
         
