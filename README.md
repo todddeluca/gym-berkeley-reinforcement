@@ -1,27 +1,49 @@
 # gym-berkeley-reinforcement
 
-## To Do
-
-- copy value agent, qlearning agent into repo so I can see they work.
 
 
 ## Introduction
 
-This is a OpenAI Gym wrapper around Berkeley AI Pacman Project 3: Reinforcement
+This is a OpenAI Gym wrapper around Berkeley AI Pacman Project 3: Reinforcement Learning.
 
 See http://inst.eecs.berkeley.edu/~cs188/pacman/reinforcement.html for the original project.
+
+I thought it would be valuable to complete to agents from the course and then be able to reuse them with other Gym environments. 
+
+Currently Gridworld is (mostly) done. Pacman and Crawler are pending.
+
+Since the original code is written in Python 2, it was converted to Python 3 and the changed code was added to this repository.
 
 
 ## Installation
 
 Clone this repository.
 
-Download and unzip http://ai.berkeley.edu/projects/release/reinforcement/v1/001/reinforcement.zip.
-
-Place the directory `reinforcement` inside the `gym-pacman/gym_pacman` directory.
 
 
 ## Usage
+
+The usage of `gridworldapp.py` is meant to be similar or identical to the original `gridworld.py` CLI:
+
+```
+python gridworldapp.py --agent q --grid=CliffGrid --episodes=10 --epsilon=0.1 --discount=0.99 
+```
+
+A trivial example of making and using a gridworld environment:
+
+```python
+import gym
+import gymberkeleyrl
+env = gym.make("gridworld-mazegrid-v0")
+observation = env.reset()
+for _ in range(1000):
+    env.render()
+    action = env.action_space.sample() # your agent here (this takes random actions)
+    observation, reward, done, info = env.step(action)
+    if done:
+        done = False
+        observation = env.reset()
+```
 
 
 ## Other Gym Environments

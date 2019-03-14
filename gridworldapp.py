@@ -129,6 +129,23 @@ def parseArgs():
     return args
 
 
+def gym_test():
+    '''
+    Example of using `gym.make` to construct a registered environment.
+    '''
+    import gym
+    import gymberkeleyrl
+    env = gym.make("gridworld-mazegrid-v0")
+    observation = env.reset()
+    for _ in range(1000):
+        env.render()
+        action = env.action_space.sample() # your agent here (this takes random actions)
+        observation, reward, done, info = env.step(action)
+        if done:
+            done = False
+            observation = env.reset()
+
+            
 def main():
     args = parseArgs()
     
@@ -141,9 +158,7 @@ def main():
     def actionFn(state):
         return env.getPossibleActions(state)
     agent = None
-    if args.manual:
-        agent = UserAgent(actionFn=actionFn)
-    elif args.agent == 'value':
+    if args.agent == 'value':
         agent = valueIterationAgents.ValueIterationAgent(env.mdp, args.discount, args.iters)
     elif args.agent == 'q':
         qLearnOpts = {'gamma': args.discount,
@@ -158,8 +173,14 @@ def main():
             
         agent = RandomAgent(actionFn=actionFn)
     else:
-        raise Exception('Unknown agent type: '+args.agent)
+        if args.manual:
+            agent = UserAgent(actionFn=actionFn)
+        else:
+            raise Exception('Unknown agent type: '+args.agent)
 
+    if args.manual and args.agent == 'q':
+        agent.getAction = UserAgent(actionFn=actionFn).getAction
+        
     if args.quiet:
         message = lambda x: None
     else:
@@ -198,7 +219,7 @@ def main():
         episode_returns = 0
         total_discount = 1
         while not done:
-            env.render()
+            env.render(agent=agent)
             action = agent.getAction(curr_state)
             if action == None:
                 raise Exception('Error: Agent returned None action')
@@ -241,9 +262,7 @@ def main():
         except KeyboardInterrupt:
             sys.exit(0)
             
-#     import time
-#     time.sleep(4)
-#     run(args)  
 
 if __name__ == '__main__':
+#     gym_test()
     main()

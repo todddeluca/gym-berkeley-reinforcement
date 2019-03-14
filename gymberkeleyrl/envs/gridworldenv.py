@@ -39,7 +39,8 @@ class StubDisplayAgent:
 class GridworldEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, grid, livingReward, noise, textDisplay, gridSize, speed, pause):
+    def __init__(self, grid='BookGrid', livingReward=0.0, noise=0.2, textDisplay=False,
+                 gridSize=150, speed=1.0, pause=False):
         '''
         '''
         self.pause = pause

@@ -4,8 +4,8 @@ import numpy as np
 
 class ObjectSpace(Space):
     '''
-    A gym space defined by a set of objects. 
-    Useful when an action is a choice of strings.
+    A space defined by a set of objects. 
+    Useful when an action or state is a choice of strings.
     '''
     
     def __init__(self, objects):
