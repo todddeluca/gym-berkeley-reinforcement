@@ -62,8 +62,8 @@ class GridworldEnv(gym.Env):
         except KeyboardInterrupt:
             sys.exit(0)
 
-        # legal actions: (north, east, south, west) or (exit,) or (,)
-        self.action_space = ObjectSpace(self.env.getPossibleActions(self.state))
+        # not all actions are legal/possible in a any state. Use getPossibleActions().
+        self.action_space = ObjectSpace(('north', 'west', 'south', 'east', 'exit'))
         
         # observation is a state, one of the possible states of the mdp
         self.observation_space = ObjectSpace(self.mdp.getStates())
@@ -77,7 +77,6 @@ class GridworldEnv(gym.Env):
         '''
         self.env.reset()
         self.state = self.env.getCurrentState()
-        self.action_space = ObjectSpace(self.env.getPossibleActions(self.state))
         return self.state
 
     def seed(self, seed=None):
@@ -100,14 +99,15 @@ class GridworldEnv(gym.Env):
         """
         next_state, reward = self.env.doAction(action)
         self.state = next_state
-        self.action_space = ObjectSpace(self.env.getPossibleActions(self.state))
-        done = (len(self.action_space) == 0) # done if no legal actions
-        
+        done = (len(self.getPossibleActions()) == 0) # done if no legal actions
         return (next_state, reward, done, {})
 
     def render(self, mode='human', agent=None):
         '''
-        For humans, visualize something. For others, return data.
+        Display the gridworld with the action-values or values of the agent.
+        
+        agent: an object with `getQValue` or `getValue` methods. By
+          default a dummy object which returns 0 is used.
         '''
         if agent is None:
             agent = StubDisplayAgent()
@@ -120,14 +120,11 @@ class GridworldEnv(gym.Env):
         if self.pause:
             self.display.pause()
 
-    def getPossibleActions(self, state):
+    def getPossibleActions(self, state=None):
         '''
         To be consistent with the berkeley agent interface, 
         which expects a function that takes a state and returns a
         list of possible actions, this function is added.
-        
-        Other agents can use the action_space.objects attribute to get the
-        possible actions for the current environment state.
         '''
-        return self.env.getPossibleActions(state)
+        return self.env.getPossibleActions(self.state if state is None else state)
         

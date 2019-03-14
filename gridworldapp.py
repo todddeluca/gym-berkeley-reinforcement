@@ -129,23 +129,6 @@ def parseArgs():
     return args
 
 
-def gym_test():
-    '''
-    Example of using `gym.make` to construct a registered environment.
-    '''
-    import gym
-    import gymberkeleyrl
-    env = gym.make("gridworld-mazegrid-v0")
-    observation = env.reset()
-    for _ in range(1000):
-        env.render()
-        action = env.action_space.sample() # your agent here (this takes random actions)
-        observation, reward, done, info = env.step(action)
-        if done:
-            done = False
-            observation = env.reset()
-
-            
 def main():
     args = parseArgs()
     
@@ -153,10 +136,12 @@ def main():
     env = GridworldEnv(args.grid, args.livingReward, args.noise, args.textDisplay,
                        args.gridSize, args.speed, args.pause)
     
-            
-    # Make agent
+    
+    # Make actionFn
     def actionFn(state):
         return env.getPossibleActions(state)
+            
+    # Make agent
     agent = None
     if args.agent == 'value':
         agent = valueIterationAgents.ValueIterationAgent(env.mdp, args.discount, args.iters)
@@ -261,7 +246,25 @@ def main():
             env.display.pause()
         except KeyboardInterrupt:
             sys.exit(0)
-            
+
+
+def gym_test():
+    '''
+    Example of using `gym.make` to construct a registered environment.
+    '''
+    import gym
+    import gymberkeleyrl
+    env = gym.make("gridworld-mazegrid-v0")
+    observation = env.reset()
+    for _ in range(1000):
+        env.render()
+        action = env.action_space.sample() # your agent here (this takes random actions)
+        action = 'exit'
+        observation, reward, done, info = env.step(action)
+        if done:
+            done = False
+            observation = env.reset()
+
 
 if __name__ == '__main__':
 #     gym_test()

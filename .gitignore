@@ -2,6 +2,10 @@
 # ignore external code
 # gymberkeleyrl/reinforcement/
 
+# ignore solutions
+# reinforcement/qlearningAgents.py
+# reinforcement/valueIterationAgents.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

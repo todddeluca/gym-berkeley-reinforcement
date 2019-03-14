@@ -19,6 +19,30 @@ Currently Gridworld is (mostly) done. Pacman and Crawler are pending.
 
 Since the original code is written in Python 2, it was converted to Python 3 and the changed code was added to this repository.
 
+## Design Choices
+
+
+### Gridworld
+
+When an illegal action is sent to the environment in `gridworld.py`, an Exception is raised.
+Therefore an agent must send a legal action, unlike some other RL environments where any action is legal
+in any state. Two possible ways to communicate the possible actions to the agent are:
+
+1. Have a separate `getPossibleActions` method which returns the possible actions for a state.
+   All actions are contained in `env.action_space.objects`.
+2. Update `env.action_space` to reflect the possible actions. How will a naive agent know all possible
+   actions? Either it would have to track actions itself or the environment could have a method for that.
+
+The first choice was taken, since it makes `actionFn` simple and compatible with `display.displayValues()`.
+
+## Alterations to Berkeley Code
+
+To make the original code a package, relative package imports, e.g. `from . import util` were added.
+
+The `2to3` conversion script introduced a bug in `textGridworldDisplay` by converting `map(None, *foo)`
+to `list(*foo)` instead of `list(zip(*foo))`.
+
+The `2to3` script did not convert bare string exceptions like `raise 'OH NO!'` to regular exceptions like `raise Exception('OH NO!')`.
 
 ## Installation
 
