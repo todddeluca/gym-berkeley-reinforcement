@@ -156,8 +156,16 @@ def getLayout(name, back=2):
 
 def tryToLoad(fullname):
     if(not os.path.exists(fullname)):
-        return None
-    f = open(fullname)
+        # when reinforcement is installed as a package
+        # layouts are package data.
+        try:
+            from pkg_resources import resource_stream
+            f = resource_stream('reinforcement', fullname)
+            print(f)
+        except Exception as e:
+            return None
+    else:
+        f = open(fullname)
     try:
         return Layout([line.strip() for line in f])
     finally:
