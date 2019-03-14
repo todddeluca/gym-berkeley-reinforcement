@@ -1,26 +1,32 @@
 from gym.envs.registration import register
 
 register(
-    id='gridworld-bookgrid-v0',
+    id='Gridworld-BookGrid-v0',
     entry_point='gymberkeleyrl.envs:GridworldEnv',
     kwargs={'grid': 'BookGrid'}
 )
 
 register(
-    id='gridworld-bridgegrid-v0',
+    id='Gridworld-BridgeGrid-v0',
     entry_point='gymberkeleyrl.envs:GridworldEnv',
     kwargs={'grid': 'BridgeGrid'}
 )
 
 register(
-    id='gridworld-cliffgrid-v0',
+    id='Gridworld-CliffGrid-v0',
     entry_point='gymberkeleyrl.envs:GridworldEnv',
     kwargs={'grid': 'CliffGrid'}
 )
 
 register(
-    id='gridworld-mazegrid-v0',
+    id='Gridworld-MazeGrid-v0',
     entry_point='gymberkeleyrl.envs:GridworldEnv',
     kwargs={'grid': 'MazeGrid'}
+)
+
+register(
+    id='Pacman-MediumClassic-v0',
+    entry_point='gymberkeleyrl.envs:PacmanEnv',
+    kwargs={'layout': 'mediumClassic'}
 )
 

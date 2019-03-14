@@ -1,84 +1,93 @@
 
+
 import gym
 from gym import spaces
 from gym.spaces import Space
 from gym.utils import seeding
 
 import numpy as np
-from reinforcement import gridworld
-from reinforcement import environment
-from reinforcement import textGridworldDisplay
-from reinforcement import graphicsGridworldDisplay
+import random
+
+from reinforcement import game
+from reinforcement.game import Agent
+from reinforcement import layout as layout_
+from reinforcement import pacman
+from reinforcement import textDisplay
+from reinforcement.pacman import ClassicGameRules
+
 from gymberkeleyrl.spaces import ObjectSpace
 
 
-# Useful references for creating a custom gym environment
-# gym.Env: https://github.com/openai/gym/blob/master/gym/core.py
-# Example environment -- soccer: https://github.com/openai/gym-soccer/blob/master/gym_soccer/envs/soccer_env.py
-# https://stackoverflow.com/questions/45068568/is-it-possible-to-create-a-new-gym-environment-in-openai
-# Gym README: https://github.com/openai/gym/
-# Gym Docs: https://gym.openai.com/docs/
-
-
-class StubDisplayAgent:
-    '''
-    render() expects an agent with certain functions
-    '''
-    # expected by display.displayQValues
-    def getQValue(*args):
-        return 0
-    
-    # expected by display.displayValues
-    def getValue(*args):
-        return 0
-
-    # expected by display.displayValues
-    def getPolicy(*args):
-        return None
-
-    
 class PacmanEnv(gym.Env):
+    '''
+    Pacman is a multi-agent game: one pacman agent and a configurable number of ghost agents.
+    Each agent takes turns playing one move, first pacman, then the ghosts. The state updates
+    after each move. The reward is the difference in score, so the reward is from the
+    perspective of pacman, not the ghosts.
+    '''
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, grid='BookGrid', livingReward=0.0, noise=0.2, textDisplay=False,
-                 gridSize=150, speed=1.0, pause=False):
+    def __init__(self, layout='mediumClassic', max_ghosts=4, catch_exceptions=False, timeout=30, 
+                 quiet_graphics=False, text_graphics=False, frame_time=0.1, zoom=1.0, 
+                 fix_random_seed=False):
         '''
+        Number of ghosts is min(max_ghosts, layout.getNumGhosts()).
         '''
-        self.pause = pause
+        self.agent_idx = 0 # tracks the index of the next agent to play.
+        self.catch_exceptions = catch_exceptions
+        self.max_ghosts = max_ghosts
         
-        # initialize mdp and env (code from gridworld.py).
-        mdpFunction = getattr(gridworld, "get" + grid)
-        self.mdp = mdpFunction() # Used by dynamic programming ValueIterationAgent
-        self.mdp.setLivingReward(livingReward)
-        self.mdp.setNoise(noise)
-        self.env = gridworld.GridworldEnvironment(self.mdp)
-        self.state = self.env.getCurrentState()
+        if fix_random_seed:
+            random.seed('cs188')
 
-        # initialize display
-        self.display = textGridworldDisplay.TextGridworldDisplay(self.mdp)
-        if not textDisplay:
-            self.display = graphicsGridworldDisplay.GraphicsGridworldDisplay(self.mdp, gridSize, speed)
-        try:
-            self.display.start()
-        except KeyboardInterrupt:
-            sys.exit(0)
-
-        # not all actions are legal/possible in a any state. Use getPossibleActions().
-        self.action_space = ObjectSpace(('north', 'west', 'south', 'east', 'exit'))
+        # Make layout
+        self.layout = layout_.getLayout(layout)
+        if self.layout is None:
+            raise Exception("The layout " + layout + " cannot be found")
+            
+        self.num_ghosts = min(max_ghosts, self.layout.getNumGhosts())
+        self.num_agents = self.num_ghosts + 1
+                
+        # Make display
+        self.display_initialized = False
+        self.null_display = textDisplay.NullGraphics()
+        if quiet_graphics:
+            self.display = null_display
+        elif text_graphics:
+            textDisplay.SLEEP_TIME = frame_time
+            self.display = textDisplay.PacmanGraphics()
+        else:
+            from reinforcement import graphicsDisplay
+            self.display = graphicsDisplay.PacmanGraphics(zoom, frameTime=frame_time)
         
-        # observation is a state, one of the possible states of the mdp
-        self.observation_space = ObjectSpace(self.mdp.getStates())
+        # Make rules
+        self.rules = ClassicGameRules(timeout)
+        self.game = None
+        
+        # Actions depend on agent and state
+        self.action_space = None
+        
+        # A state/observation is a rather complex object.
+        self.observation_space = None
 
         self.seed()
-        self.reset()
         
-    def reset(self):
+    def reset(self, quiet=False):
         '''
         Reset the environment state. Return initial observation.
         '''
-        self.env.reset()
-        self.state = self.env.getCurrentState()
-        return self.state
+        if self.display_initialized:
+            self.display.finish()
+            self.display_initialized = False
+
+        # game is passed dummy pacman and ghost agents, since the game
+        # is not being used for the game.run().
+        self.game = self.rules.newGame(
+            self.layout, Agent(0), [Agent(i) for i in range(1, self.max_ghosts + 1)],
+            self.display, quiet, self.catch_exceptions)
+        self.agent_idx = 0 # pacman moves first
+
+        return self.game.state
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -98,34 +107,48 @@ class PacmanEnv(gym.Env):
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
-        next_state, reward = self.env.doAction(action)
-        self.state = next_state
-        done = (len(self.getPossibleActions()) == 0) # done if no legal actions
-        return (next_state, reward, done, {})
-
-    def render(self, mode='human', agent=None):
-        '''
-        Display the gridworld with the action-values or values of the agent.
-        
-        agent: an object with `getQValue` or `getValue` methods. By
-          default a dummy object which returns 0 is used.
-        '''
-        if agent is None:
-            agent = StubDisplayAgent()
-            
-        if 'getQValue' in dir(agent):
-            self.display.displayQValues(agent, self.state, "CURRENT Q-VALUES")
+        # Execute the action
+        self.game.moveHistory.append((self.agent_idx, action))
+        if self.catch_exceptions:
+            try:
+                next_state = self.game.state.generateSuccessor(self.agent_idx, action)
+            except Exception as data:
+                self.game.mute(self.agent_idx)
+                self.game._agentCrash(self.agent_idx)
+                self.game.unmute()
+                return
         else:
-            self.display.displayValues(agent, self.state, "CURRENT VALUES")
+            next_state = self.game.state.generateSuccessor(self.agent_idx, action)
+        
+        reward = next_state.getScore() - self.game.state.getScore()
+        self.game.state = next_state
+        done = self.game.gameOver # set by rules/game.state during generateSuccessor
+        info = {} if not done else {'game': self.game} # return game for recording
+        
+        # It's the next agent's move
+        self.agent_idx = (self.agent_idx + 1) % self.num_agents
 
-        if self.pause:
-            self.display.pause()
+        return (next_state, reward, done, info)
 
-    def getPossibleActions(self, state=None):
+    def render(self, mode='human'):
         '''
-        To be consistent with the berkeley agent interface, 
-        which expects a function that takes a state and returns a
-        list of possible actions, this function is added.
         '''
-        return self.env.getPossibleActions(self.state if state is None else state)
+        if not self.display_initialized:
+            self.display.initialize(self.game.state.data)
+            self.display_initialized = True
+
+        self.display.update(self.game.state.data)
+
+    def getPossibleActions(self, state=None, agent_idx=None):
+        '''
+        state: defaults to current environment state.
+        agent_idx: defaults to current environment actor.
+        '''
+        if agent_idx is None:
+            idx = self.agent_idx
+            
+        if state is not None:
+            return state.getLegalActions(agentIndex=idx)
+        else:
+            return self.game.state.getLegalActions(agentIndex=idx)
         

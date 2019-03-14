@@ -37,7 +37,10 @@ The first choice was taken, since it makes `actionFn` simple and compatible with
 
 ## Alterations to Berkeley Code
 
-To make the original code a package, relative package imports, e.g. `from . import util` were added.
+To make the original code a package:
+- an `__init__.py` file was added to `reinforcement/` 
+- relative package imports, e.g. `from . import util` were added to the modules.
+- layouts were added as `package_data` to `setup.py`.
 
 The `2to3` conversion script introduced a bug in `textGridworldDisplay` by converting `map(None, *foo)`
 to `list(*foo)` instead of `list(zip(*foo))`.
@@ -48,6 +51,7 @@ The `2to3` script did not convert bare string exceptions like `raise 'OH NO!'` t
 
 Clone this repository.
 
+Install with pip from within the directory. For example: `pip install -e .`
 
 
 ## Usage

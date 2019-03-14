@@ -254,7 +254,7 @@ def gym_test():
     '''
     import gym
     import gymberkeleyrl
-    env = gym.make("gridworld-mazegrid-v0")
+    env = gym.make("Gridworld-MazeGrid-v0")
     observation = env.reset()
     for _ in range(1000):
         env.render()
