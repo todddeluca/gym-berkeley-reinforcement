@@ -161,7 +161,6 @@ def tryToLoad(fullname):
         try:
             from pkg_resources import resource_stream
             f = resource_stream('reinforcement', fullname)
-            print(f)
         except Exception as e:
             return None
     else:
