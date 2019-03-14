@@ -1,19 +1,18 @@
 import random
+import gym
+import gymberkeleyrl
+from gymberkeleyrl.envs import PacmanEnv
 
 
 def gym_test():
     '''
     Example of using `gym.make` to construct a registered environment.
     '''
-    import gym
-    import gymberkeleyrl
-    env = gym.make("Pacman-MediumClassic-v0")
+#     env = gym.make("Pacman-MediumClassic-v0")
+    env = PacmanEnv(layout='minimaxClassic')
     observation = env.reset()
-    for _ in range(1000):
+    for _ in range(100):
         actions = env.getPossibleActions()
-        print('obs:', observation)
-        print('actions:', actions)
-        print('agentIndex:', env.agent_idx)
         action = random.choice(actions) # env.action_space.sample() # your agent here (this takes random actions)
         observation, reward, done, info = env.step(action)
         env.render()

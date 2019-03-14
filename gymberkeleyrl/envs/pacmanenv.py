@@ -119,10 +119,14 @@ class PacmanEnv(gym.Env):
                 return
         else:
             next_state = self.game.state.generateSuccessor(self.agent_idx, action)
-        
+
         reward = next_state.getScore() - self.game.state.getScore()
         self.game.state = next_state
-        done = self.game.gameOver # set by rules/game.state during generateSuccessor
+
+        # Update self.game.gameOver
+        self.game.rules.process(self.game.state, self.game)
+        
+        done = self.game.gameOver # set by rules/game.state during rules.process
         info = {} if not done else {'game': self.game} # return game for recording
         
         # It's the next agent's move
