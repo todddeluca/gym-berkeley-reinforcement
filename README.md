@@ -1,5 +1,9 @@
 # gym-berkeley-reinforcement
 
+## To Do
+
+- copy value agent, qlearning agent into repo so I can see they work.
+
 
 ## Introduction
 

@@ -44,16 +44,16 @@ class GridworldEnv(gym.Env):
         '''
         # initialize mdp and env (code from gridworld.py).
         mdpFunction = getattr(gridworld, "get" + grid)
-        mdp = mdpFunction()
-        mdp.setLivingReward(livingReward)
-        mdp.setNoise(noise)
-        self.env = gridworld.GridworldEnvironment(mdp)
+        self.mdp = mdpFunction() # Used by dynamic programming ValueIterationAgent
+        self.mdp.setLivingReward(livingReward)
+        self.mdp.setNoise(noise)
+        self.env = gridworld.GridworldEnvironment(self.mdp)
         self.state = self.env.getCurrentState()
 
         # initialize display
-        self.display = textGridworldDisplay.TextGridworldDisplay(mdp)
+        self.display = textGridworldDisplay.TextGridworldDisplay(self.mdp)
         if not textDisplay:
-            self.display = graphicsGridworldDisplay.GraphicsGridworldDisplay(mdp, gridSize, speed)
+            self.display = graphicsGridworldDisplay.GraphicsGridworldDisplay(self.mdp, gridSize, speed)
         try:
             self.display.start()
         except KeyboardInterrupt:
@@ -63,7 +63,7 @@ class GridworldEnv(gym.Env):
         self.action_space = ObjectSpace(self.env.getPossibleActions(self.state))
         
         # observation is a state, one of the possible states of the mdp
-        self.observation_space = ObjectSpace(mdp.getStates())
+        self.observation_space = ObjectSpace(self.mdp.getStates())
 
         self.seed()
         self.reset()
@@ -115,3 +115,15 @@ class GridworldEnv(gym.Env):
             self.display.displayValues(agent, self.state, "CURRENT VALUES")
 
         self.display.pause()
+
+#     def getPossibleActions(state):
+#         '''
+#         To be consistent with the berkeley agent interface, 
+#         which expects a function that takes a state and returns a
+#         list of possible actions, this function is added.
+        
+#         Other agents can use the action_space.objects attribute to get the
+#         possible actions for the current environment state.
+#         '''
+#         return self.env.getPossibleActions(self.state)
+        

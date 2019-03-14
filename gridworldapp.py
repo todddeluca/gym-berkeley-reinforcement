@@ -1,56 +1,75 @@
 
 import argparse
 from gymberkeleyrl.envs.gridworldenv import GridworldEnv
+from gymberkeleyrl.reinforcement import valueIterationAgents, qlearningAgents
+import random
 
-'''
-    optParser.add_option('-d', '--discount',action='store',
-                         type='float',dest='discount',default=0.9,
-                         help='Discount on future (default %default)')
-    optParser.add_option('-r', '--livingReward',action='store',
-                         type='float',dest='livingReward',default=0.0,
-                         metavar="R", help='Reward for living for a time step (default %default)')
-    optParser.add_option('-n', '--noise',action='store',
-                         type='float',dest='noise',default=0.2,
-                         metavar="P", help='How often action results in ' +
-                         'unintended direction (default %default)' )
-    optParser.add_option('-e', '--epsilon',action='store',
-                         type='float',dest='epsilon',default=0.3,
-                         metavar="E", help='Chance of taking a random action in q-learning (default %default)')
-    optParser.add_option('-l', '--learningRate',action='store',
-                         type='float',dest='learningRate',default=0.5,
-                         metavar="P", help='TD learning rate (default %default)' )
-    optParser.add_option('-i', '--iterations',action='store',
-                         type='int',dest='iters',default=10,
-                         metavar="K", help='Number of rounds of value iteration (default %default)')
-    optParser.add_option('-k', '--episodes',action='store',
-                         type='int',dest='episodes',default=1,
-                         metavar="K", help='Number of epsiodes of the MDP to run (default %default)')
-    optParser.add_option('-g', '--grid',action='store',
-                         metavar="G", type='string',dest='grid',default="BookGrid",
-                         help='Grid to use (case sensitive; options are BookGrid, BridgeGrid, CliffGrid, MazeGrid, default %default)' )
-    optParser.add_option('-w', '--windowSize', metavar="X", type='int',dest='gridSize',default=150,
-                         help='Request a window width of X pixels *per grid cell* (default %default)')
-    optParser.add_option('-a', '--agent',action='store', metavar="A",
-                         type='string',dest='agent',default="random",
-                         help='Agent type (options are \'random\', \'value\' and \'q\', default %default)')
-    optParser.add_option('-t', '--text',action='store_true',
-                         dest='textDisplay',default=False,
-                         help='Use text-only ASCII display')
-    optParser.add_option('-p', '--pause',action='store_true',
-                         dest='pause',default=False,
-                         help='Pause GUI after each time step when running the MDP')
-    optParser.add_option('-q', '--quiet',action='store_true',
-                         dest='quiet',default=False,
-                         help='Skip display of any learning episodes')
-    optParser.add_option('-s', '--speed',action='store', metavar="S", type=float,
-                         dest='speed',default=1.0,
-                         help='Speed of animation, S > 1.0 is faster, 0.0 < S < 1.0 is slower (default %default)')
-    optParser.add_option('-m', '--manual',action='store_true',
-                         dest='manual',default=False,
-                         help='Manually control agent')
-    optParser.add_option('-v', '--valueSteps',action='store_true' ,default=False,
-                         help='Display each step of value iteration')
-'''
+
+class RandomAgent:
+    '''
+    An agent that acts randomly.
+    '''
+    def __init__(self, actionFn):
+        self.actionFn = actionFn
+        
+    def getAction(self, state):
+        return random.choice(actionFn(state))
+    
+    def getValue(self, state):
+        return 0.0
+    
+    def getQValue(self, state, action):
+        return 0.0
+    
+    def getPolicy(self, state):
+        "NOTE: 'random' is a special policy value; don't use it in your code."
+        return 'random'
+    
+    def update(self, state, action, nextState, reward):
+        pass
+
+
+class UserAgent:
+    '''
+    Get an action from the user.
+
+    Used for debugging and lecture demos.
+    '''
+    def __init__(self, actionFn):
+        self.actionFn = actionFn
+        
+    def getAction(self, state):
+        from gymberkeleyrl.reinforcement import graphicsUtils
+        action = None
+        while True:
+            keys = graphicsUtils.wait_for_keys()
+            if 'Up' in keys: action = 'north'
+            if 'Down' in keys: action = 'south'
+            if 'Left' in keys: action = 'west'
+            if 'Right' in keys: action = 'east'
+            if 'q' in keys: sys.exit(0)
+            if action == None: continue
+            break
+            
+        actions = self.actionFn(state)
+        if action not in actions:
+            action = actions[0]
+            
+        return action
+    
+    def getValue(self, state):
+        return 0.0
+    
+    def getQValue(self, state, action):
+        return 0.0
+    
+    def getPolicy(self, state):
+        "NOTE: 'random' is a special policy value; don't use it in your code."
+        return 'random'
+    
+    def update(self, state, action, nextState, reward):
+        pass
+
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -105,17 +124,121 @@ def parseArgs():
 
 def main():
     args = parseArgs()
+    
+    # Make environment
     env = GridworldEnv(args.grid, args.livingReward, args.noise, args.textDisplay, args.gridSize, args.speed)
-    env.reset()
-    done = False
-    while not done:
-        env.render()
-        if len(env.action_space):
-            action = env.action_space.sample()
-            next_state, reward, done, info = env.step(action) # take a random action
-            print(next_state, reward, done, info)
+    
+    curr_state = None
+    def actionFn(state):
+        '''close around env and curr_state'''
+        if state == curr_state:
+            return env.action_space.objects
         else:
-            raise Exception('not done and no actions')
+            # env only supports querying for the actions of the current state
+            # might not work for agents that plan.
+            raise Exception('state != curr_state', state, curr_state)
+            
+    # Make agent
+    agent = None
+    if args.manual:
+        agent = UserAgent(actionFn=actionFn)
+    elif args.agent == 'value':
+        agent = valueIterationAgents.ValueIterationAgent(env.mdp, args.discount, args.iters)
+    elif args.agent == 'q':
+        qLearnOpts = {'gamma': args.discount,
+                      'alpha': args.learningRate,
+                      'epsilon': args.epsilon,
+                      'actionFn': actionFn}
+        agent = qlearningAgents.QLearningAgent(**qLearnOpts)
+    elif args.agent == 'random':
+        # # No reason to use the random agent without episodes
+        if args.episodes == 0:
+            args.episodes = 10
+            
+        agent = RandomAgent(actionFn=actionFn)
+    else:
+        raise Exception('Unknown agent type: '+args.agent)
+
+    if args.quiet:
+        message = lambda x: None
+    else:
+        message = lambda x: print(x)
+        
+    # Display Value Iterations for the Value Agent
+    try:
+        if not args.manual and args.agent == 'value':
+            if args.valueSteps:
+                for i in range(args.iters):
+                    temp_agent = valueIterationAgents.ValueIterationAgent(env.mdp, args.discount, i)
+                    env.display.displayValues(temp_agent, message = "VALUES AFTER "+str(i)+" ITERATIONS")
+                    env.display.pause()
+
+            env.display.displayValues(agent, message = "VALUES AFTER "+str(args.iters)+" ITERATIONS")
+            env.display.pause()
+            env.display.displayQValues(agent, message = "Q-VALUES AFTER "+str(args.iters)+" ITERATIONS")
+            env.display.pause()
+    except KeyboardInterrupt:
+        sys.exit(0)
+    
+    # Run Episodes
+    if args.episodes > 0:
+        print()
+        print(("RUNNING", args.episodes, "EPISODES"))
+        print()
+        
+    returns = 0
+    for episode in range(1, args.episodes + 1):
+        if 'startEpisode' in dir(agent): 
+            agent.startEpisode()
+            
+        message("BEGINNING EPISODE: "+str(episode)+"\n")
+        curr_state = env.reset()
+        done = False
+        episode_returns = 0
+        total_discount = 1
+        while not done:
+            env.render()
+            action = agent.getAction(curr_state)
+            if action == None:
+                raise Exception('Error: Agent returned None action')
+
+            next_state, reward, done, info = env.step(action)
+            print(next_state, reward, done, info)
+            message("Started in state: "+str(curr_state)+
+                    "\nTook action: "+str(action)+
+                    "\nEnded in state: "+str(next_state)+
+                    "\nGot reward: "+str(reward)+"\n")
+            
+            # UPDATE LEARNER
+            if 'observeTransition' in dir(agent):
+                agent.observeTransition(curr_state, action, next_state, reward)
+
+            curr_state = next_state
+            
+            episode_returns += reward * total_discount
+            total_discount *= args.discount
+            if done:
+                message("EPISODE "+str(episode)+" COMPLETE: RETURN WAS "+str(episode_returns)+"\n")
+                returns += episode_returns
+
+        if 'stopEpisode' in dir(agent):
+            agent.stopEpisode()
+        
+    if args.episodes > 0:
+        print()
+        print(("AVERAGE RETURNS FROM START STATE: "+str((returns + 0.0) / args.episodes)))
+        print()
+        print()
+
+    # DISPLAY POST-LEARNING VALUES / Q-VALUES
+    if args.agent == 'q' and not args.manual:
+        try:
+            display.displayQValues(agent, message = "Q-VALUES AFTER "+str(args.episodes)+" EPISODES")
+            display.pause()
+            display.displayValues(agent, message = "VALUES AFTER "+str(args.episodes)+" EPISODES")
+            display.pause()
+        except KeyboardInterrupt:
+            sys.exit(0)
             
 #     import time
 #     time.sleep(4)
