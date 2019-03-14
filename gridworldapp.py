@@ -74,33 +74,33 @@ class UserAgent:
 def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--livingReward', type=float, default=0.0,
-                         metavar='R', help='Reward for living for a time step (default %default)')
+                         metavar='R', help='Reward for living for a time step (default %(default)s)')
     parser.add_argument('-d', '--discount',
                          type=float, default=0.9,
-                         help='Discount on future (default %default)')
+                         help='Discount on future (default %(default)s)')
     parser.add_argument('-n', '--noise',
                          type=float, default=0.2,
-                         metavar="P", help='How often action results in unintended direction (default %default)' )
+                         metavar="P", help='How often action results in unintended direction (default %(default)s)' )
     parser.add_argument('-e', '--epsilon',
                          type=float, default=0.3,
-                         metavar="E", help='Chance of taking a random action in q-learning (default %default)')
+                         metavar="E", help='Chance of taking a random action in q-learning (default %(default)s)')
     parser.add_argument('-l', '--learningRate',
                          type=float, default=0.5,
-                         metavar="P", help='TD learning rate (default %default)' )
+                         metavar="P", help='TD learning rate (default %(default)s)' )
     parser.add_argument('-i', '--iterations',
                          type=int, dest='iters', default=10,
-                         metavar="K", help='Number of rounds of value iteration (default %default)')
+                         metavar="K", help='Number of rounds of value iteration (default %(default)s)')
     parser.add_argument('-k', '--episodes',
                          type=int, default=1,
-                         metavar="K", help='Number of epsiodes of the MDP to run (default %default)')
+                         metavar="K", help='Number of epsiodes of the MDP to run (default %(default)s)')
     parser.add_argument('-g', '--grid',
                          metavar="G", default="BookGrid", choices=['BookGrid', 'BridgeGrid', 'CliffGrid', 'MazeGrid'],
-                         help='Grid to use (case sensitive; options are BookGrid, BridgeGrid, CliffGrid, MazeGrid, default %default)' )
+                         help='Grid to use (case sensitive; options are BookGrid, BridgeGrid, CliffGrid, MazeGrid, default %(default)s)' )
     parser.add_argument('-w', '--windowSize', metavar="X", type=int, dest='gridSize', default=150,
-                         help='Request a window width of X pixels *per grid cell* (default %default)')
+                         help='Request a window width of X pixels *per grid cell* (default %(default)s)')
     parser.add_argument('-a', '--agent', metavar="A",
                          default="random",
-                         help='Agent type (options are \'random\', \'value\' and \'q\', default %default)')
+                         help='Agent type (options are \'random\', \'value\' and \'q\', default %(default)s)')
     parser.add_argument('-t', '--text', action='store_true',
                          dest='textDisplay', default=False,
                          help='Use text-only ASCII display')
@@ -112,7 +112,7 @@ def parseArgs():
                          help='Skip display of any learning episodes')
     parser.add_argument('-s', '--speed', metavar="S", type=float,
                          default=1.0,
-                         help='Speed of animation, S > 1.0 is faster, 0.0 < S < 1.0 is slower (default %default)')
+                         help='Speed of animation, S > 1.0 is faster, 0.0 < S < 1.0 is slower (default %(default)s)')
     parser.add_argument('-m', '--manual',action='store_true',
                          default=False,
                          help='Manually control agent')
