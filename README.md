@@ -6,7 +6,12 @@
 
 This is a OpenAI Gym wrapper around Berkeley AI Pacman Project 3: Reinforcement Learning.
 
-See http://inst.eecs.berkeley.edu/~cs188/pacman/reinforcement.html for the original project.
+Links to the Berkeley project:
+
+- Course website: https://inst.eecs.berkeley.edu/~cs188/fa18/
+- RL project page: https://inst.eecs.berkeley.edu/~cs188/fa18/project3.html
+- RL code download link: https://inst.eecs.berkeley.edu/~cs188/fa18/assets/files/reinforcement.zip
+
 
 I thought it would be valuable to complete to agents from the course and then be able to reuse them with other Gym environments. 
 

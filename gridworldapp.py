@@ -1,7 +1,7 @@
 
 import argparse
 from gymberkeleyrl.envs.gridworldenv import GridworldEnv
-from gymberkeleyrl.reinforcement import valueIterationAgents, qlearningAgents
+from reinforcement import valueIterationAgents, qlearningAgents
 import random
 
 
@@ -13,7 +13,7 @@ class RandomAgent:
         self.actionFn = actionFn
         
     def getAction(self, state):
-        return random.choice(actionFn(state))
+        return random.choice(self.actionFn(state))
     
     def getValue(self, state):
         return 0.0

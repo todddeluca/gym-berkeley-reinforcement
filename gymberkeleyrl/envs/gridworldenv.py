@@ -4,10 +4,10 @@ from gym.spaces import Space
 from gym.utils import seeding
 
 import numpy as np
-from gymberkeleyrl.reinforcement import gridworld
-from gymberkeleyrl.reinforcement import environment
-from gymberkeleyrl.reinforcement import textGridworldDisplay
-from gymberkeleyrl.reinforcement import graphicsGridworldDisplay
+from reinforcement import gridworld
+from reinforcement import environment
+from reinforcement import textGridworldDisplay
+from reinforcement import graphicsGridworldDisplay
 from gymberkeleyrl.spaces import ObjectSpace
 
 
