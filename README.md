@@ -15,11 +15,33 @@ Links to the Berkeley project:
 
 I thought it would be valuable to complete to agents from the course and then be able to reuse them with other Gym environments. 
 
-Currently Gridworld is (mostly) done. Pacman and Crawler are pending.
+Currently Gridworld is mostly done. Pacman is somewhat done and Crawler are pending.
 
 Since the original code is written in Python 2, it was converted to Python 3 and the changed code was added to this repository.
 
+
+## To Do
+
+1. The pacman gym environment seems mostly done, but the CLI and game loop from `pacman.py` and `Game.run()` need to be ported.
+
+
 ## Design Choices
+
+### Pacman
+
+
+Since `reinforcement` is being treated as a package, `loadAgent` was rewritten in `pacmanapp.py` to look in
+a defined list of agent modules instead of searching the current dir for "\*Agent.py" files.
+
+The `layout.py` module was altered to access layouts as package data instead of files.
+
+Pacman is a multiplayer game. To interact with classes like `Game` and `ClassicGameRules` which vary their behavior
+based on the agent index, `PacmanEnv` tracks the index of the player for the current step just by
+incrementing an index (modulo the number of players). This assumes that the game loop interacting with
+the environment lets pacman take the first action, then the ghosts, then pacman, and so on.
+
+Like Gridworld, `env.getPossibleActions` returns the legal actions for the current state and the current
+agent index, unless a state or agent index is passed to the function.
 
 
 ### Gridworld
@@ -55,6 +77,25 @@ Install with pip from within the directory. For example: `pip install -e .`
 
 
 ## Usage
+
+### Pacman
+
+Play an interactive game of pacman:
+
+```
+python pacmanapp.py
+```
+
+Watch a greedy pacman agent face off against the ghosts
+on the smallGrid layout, first playing 9 games quietly before displaying a game
+
+```
+python pacmanapp.py -l smallGrid -p GreedyAgent -n 10 -x 9
+```
+
+
+
+### Gridworld
 
 The usage of `gridworldapp.py` is meant to be similar or identical to the original `gridworld.py` CLI:
 

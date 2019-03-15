@@ -72,20 +72,28 @@ class PacmanEnv(gym.Env):
 
         self.seed()
         
-    def reset(self, quiet=False):
+    def reset(self, quiet=False, initialize_display=False):
         '''
+        quiet: less output
+        initialize_display: KeyboardAgent requires display to be 
+          initialized before the first action is taken.
+
         Reset the environment state. Return initial observation.
         '''
         if self.display_initialized:
             self.display.finish()
             self.display_initialized = False
-
+            
         # game is passed dummy pacman and ghost agents, since the game
         # is not being used for the game.run().
         self.game = self.rules.newGame(
             self.layout, Agent(0), [Agent(i) for i in range(1, self.max_ghosts + 1)],
             self.display, quiet, self.catch_exceptions)
         self.agent_idx = 0 # pacman moves first
+
+        if initialize_display:
+            self.display.initialize(self.game.state.data)
+            self.display_initialized = True
 
         return self.game.state
 
