@@ -22,68 +22,6 @@ Currently Gridworld is mostly done. Pacman is somewhat done and Crawler are pend
 
 1. Port the timeout and exception handling from `Game.run()` to `pacmanapp.run_game()`
 
-
-## Design Choices
-
-Overall the structure of application like `pacman.py` or `gridworld.py` can be logically 
-divided into an agent, an environment, and orchestration code. 
-- The agent is responsible for taking actions given a state and learning from experience,
-  if it learns. 
-- The environment keeps track of the current state, responding to actions by returning the
-  next state and reward.
-- The orchestration code is responsible for mediating the interactions between the agent
-  and the environment. It creates the agent and environment and runs the game loop.
-
-In the OpenAI Gym API, the environment is responsible for rendering (i.e. displaying) the 
-environment on request, via `render`. There is no specific mechanism for querying the legal
-actions for a given state.
-
-Some agents in 
-
-
-
-### Pacman
-
-
-Since `reinforcement` is being treated as a package, `loadAgent` was rewritten in `pacmanapp.py` to look in
-a defined list of agent modules instead of searching the current dir for "\*Agent.py" files.
-
-The `layout.py` module was altered to access layouts as package data instead of files.
-
-Pacman is a multiplayer game. To interact with classes like `Game` and `ClassicGameRules` which vary their behavior
-based on the agent index, `PacmanEnv` tracks the index of the player for the current step just by
-incrementing an index (modulo the number of players). This assumes that the game loop interacting with
-the environment lets pacman take the first action, then the ghosts, then pacman, and so on.
-
-Like Gridworld, `env.getPossibleActions` returns the legal actions for the current state and the current
-agent index, unless a state or agent index is passed to the function.
-
-
-### Gridworld
-
-When an illegal action is sent to the environment in `gridworld.py`, an Exception is raised.
-Therefore an agent must send a legal action, unlike some other RL environments where any action is legal
-in any state. Two possible ways to communicate the possible actions to the agent are:
-
-1. Have a separate `getPossibleActions` method which returns the possible actions for a state.
-   All actions are contained in `env.action_space.objects`.
-2. Update `env.action_space` to reflect the possible actions. How will a naive agent know all possible
-   actions? Either it would have to track actions itself or the environment could have a method for that.
-
-The first choice was taken, since it makes `actionFn` simple and compatible with `display.displayValues()`.
-
-## Alterations to Berkeley Code
-
-To make the original code a package:
-- an `__init__.py` file was added to `reinforcement/` 
-- relative package imports, e.g. `from . import util` were added to the modules.
-- layouts were added as `package_data` to `setup.py`.
-
-The `2to3` conversion script introduced a bug in `textGridworldDisplay` by converting `map(None, *foo)`
-to `list(*foo)` instead of `list(zip(*foo))`.
-
-The `2to3` script did not convert bare string exceptions like `raise 'OH NO!'` to regular exceptions like `raise Exception('OH NO!')`.
-
 ## Installation
 
 Clone this repository.
@@ -143,10 +81,6 @@ for j in range(2): # num games
         agent_idx = (agent_idx + 1) % num_agents
 ```
 
-
-
-
-
 ### Gridworld
 
 The usage of `gridworldapp.py` is meant to be similar or identical to the original `gridworld.py` CLI:
@@ -171,6 +105,98 @@ for _ in range(1000):
         observation = env.reset()
 ```
 
+## Design Choices
+
+An major design goal was to make minimal changes to the existing Berkeley code. As such
+changes were only made to the existing code to make it a python 3 package.
+
+The overall structure of application like `pacman.py` or `gridworld.py` can be logically 
+divided into an agent, an environment, and a coordinator.
+- The agent is responsible for taking actions given a state and learning from experience,
+  if it learns. 
+- The environment keeps track of the current state, responding to actions by returning the
+  next state and reward.
+- The coordinator is responsible for reading configuration, constructing agents and the
+  environment, and running the game loop.
+
+In the OpenAI Gym API, the environment is responsible for rendering (i.e. displaying) the 
+environment on request, via `render`. Also there is no specific mechanism for querying the legal
+actions for a given state. 
+
+
+### Pacman
+
+Pacman can be seen as a multi-agent game. The Github issue,
+https://github.com/openai/gym/issues/934, has many useful ideas for implementing a multi-agent
+Gym environment. 
+
+To interact with classes like `Game` and `ClassicGameRules` which vary their behavior
+based on the agent index, `PacmanEnv` tracks the index of the player for the current step just by
+incrementing an index (modulo the number of players). The environment assumes that pacman take 
+the first action, then the ghosts, then pacman, and so on.
+
+Like Gridworld, `env.getPossibleActions` returns the legal actions for the current state and the current
+agent index, unless a state or agent index is passed to the function.
+
+
+### Gridworld
+
+When an illegal action is sent to the environment in `gridworld.py`, an Exception is raised.
+Therefore an agent must send a legal action, unlike some other RL environments where any action is legal
+in any state. Two possible ways to communicate the possible actions to the agent are:
+
+1. Have a separate `getPossibleActions` method which returns the possible actions for a state.
+   All actions are contained in `env.action_space.objects`.
+2. Update `env.action_space` to reflect the possible actions. How will a naive agent know all possible
+   actions? Either it would have to track actions itself or the environment could have a method for that.
+
+The first choice was taken, since it makes `actionFn` simple and compatible with `display.displayValues()`.
+
+
+## Future Work
+
+The current Gym environments for Pacman and Gridworld do not use the standard numerical Space classes
+for `action_space` and `observation_space`. Gridworld uses and `ObjectSpace`, representing a set
+of discrete non-numerical objects. Pacman ignored `action_space` and `observation_space` entirely.
+
+To make these Gym environments more typical of other environments or 
+friendlier to 3rd party deep RL agents which expect numerical spaces:
+
+- Make the `action_space` a Discrete space. The orchestration code (e.g. `pacmanapp.py`) 
+  can translate into the actions (e.g. 'north', 'south', etc.) the Berkeley agent code understands.
+- Possibly allow agents to make illegal actions, to accomodate 3rd party agents and to deprecate the 
+  `getPossibleActions` method.
+- Make the `observation_space` a Box space representing the board as 2d matrix, where each
+  position encodes what is present at that position on a board. The current pacman observation is 
+  a complex GameState object which includes references to internal game objects. A translation layer
+  from a Box to a GameState-like object could accomodate existing agent code.
+  
+Changes to the agents that would make them more compatible with other Gym environments:
+
+- Change the Berkeley pacman agent code to
+  - take an `actionFn` instead of getting the possible actions from the `state`.
+  - remove the `observationFunction` which computes the reward from 
+    the `state.getScore() - last_state.getScore()`
+    and replace with the existing `observeTransition`, using the reward computed by
+    the orchestration code. See example below.
+
+
+## Alterations to Berkeley Code
+
+To make the original code in the `reinforcement/` directory a package:
+- an `__init__.py` file was added to `reinforcement/` 
+- relative package imports, e.g. `from . import util`, were added to the modules.
+- layouts were added as `package_data` to `setup.py`
+- The `layout.py` module was changed to access the package data.
+- loadAgent` was rewritten in `pacmanapp.py` to look in a defined list of agent modules instead of 
+  searching the current dir for files matching `*Agent.py` and importing them. Perhaps there is a more
+  dynamic way of searching the package for modules containing agent classes.
+
+The `2to3` conversion script introduced a bug in `textGridworldDisplay` by converting `map(None, *foo)`
+to `list(*foo)` instead of `list(zip(*foo))`.
+
+The `2to3` script did not convert bare string exceptions like `raise 'OH NO!'` to regular exceptions like `raise Exception('OH NO!')`.
+
 
 ## Other Gym Environments
 
@@ -179,7 +205,7 @@ Berkeley RL Environments
 https://github.com/rlworkgroup/garage/blob/master/garage/envs/grid_world_env.py
 
 
-## Thoughts on Berkeley Reinforcement Code Flow and OpenAI Gym
+## Notes on Berkeley Code Flow and OpenAI Gym
 
 Consider the games pacman and gridworld.
 
