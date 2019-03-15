@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This is a OpenAI Gym wrapper around Berkeley AI Pacman Project 3: Reinforcement Learning.
+This is a OpenAI Gym wrapper around Berkeley's CS188 Intro to AI Pacman Project 3: Reinforcement Learning.
 
 Links to the Berkeley project:
 
@@ -17,15 +17,30 @@ I thought it would be valuable to complete to agents from the course and then be
 
 Currently Gridworld is mostly done. Pacman is somewhat done and Crawler are pending.
 
-Since the original code is written in Python 2, it was converted to Python 3 and the changed code was added to this repository.
-
 
 ## To Do
 
-1. The pacman gym environment seems mostly done, but the CLI and game loop from `pacman.py` and `Game.run()` need to be ported.
+1. Port the timeout and exception handling from `Game.run()` to `pacmanapp.run_game()`
 
 
 ## Design Choices
+
+Overall the structure of application like `pacman.py` or `gridworld.py` can be logically 
+divided into an agent, an environment, and orchestration code. 
+- The agent is responsible for taking actions given a state and learning from experience,
+  if it learns. 
+- The environment keeps track of the current state, responding to actions by returning the
+  next state and reward.
+- The orchestration code is responsible for mediating the interactions between the agent
+  and the environment. It creates the agent and environment and runs the game loop.
+
+In the OpenAI Gym API, the environment is responsible for rendering (i.e. displaying) the 
+environment on request, via `render`. There is no specific mechanism for querying the legal
+actions for a given state.
+
+Some agents in 
+
+
 
 ### Pacman
 
@@ -73,7 +88,9 @@ The `2to3` script did not convert bare string exceptions like `raise 'OH NO!'` t
 
 Clone this repository.
 
-Install with pip from within the directory. For example: `pip install -e .`
+Install with pip from within the directory to install the packages.
+
+For example: `pip install -e .`
 
 
 ## Usage
@@ -93,6 +110,41 @@ on the smallGrid layout, first playing 9 games quietly before displaying a game
 python pacmanapp.py -l smallGrid -p GreedyAgent -n 10 -x 9
 ```
 
+All the bells and whistles:
+
+```
+python pacmanapp.py -l smallClassic -p ApproximateQAgent  -a extractor=SimpleExtractor -z2 -t -q -g DirectionalGhost -n100 -x90 -k1 -f
+```
+
+Simple example of a game loop:
+
+```python
+env = gym.make("Pacman-MinimaxClassic-v0")
+num_agents = env.num_agents # get number of ghosts + 1 from env
+agents = [pacmanAgents.GreedyAgent()]
+agents += [ghostAgents.RandomGhost(i) for i in range(1, num_agents)]
+num_games = 2
+for j in range(2): # num games
+    state = env.reset()
+    done = False
+    agent_idx = 0
+    agent_rewards = np.zeros(num_agents)
+    while not done:
+        agent = agents[agent_idx]
+#             actions = env.getPossibleActions()
+#             action = random.choice(actions) 
+        action = agent.getAction(state)
+        next_state, reward, done, info = env.step(action)
+        agent_rewards[agent_idx] = reward
+        if agent_idx == 0:
+            print('Rewards since Pacman\'s last move:', agent_rewards.sum())
+        env.render()
+        state = next_state
+        agent_idx = (agent_idx + 1) % num_agents
+```
+
+
+
 
 
 ### Gridworld
@@ -108,7 +160,7 @@ A trivial example of making and using a gridworld environment:
 ```python
 import gym
 import gymberkeleyrl
-env = gym.make("gridworld-mazegrid-v0")
+env = gym.make("Gridworld-MazeGrid-v0")
 observation = env.reset()
 for _ in range(1000):
     env.render()

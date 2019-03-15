@@ -20,10 +20,19 @@ from gymberkeleyrl.spaces import ObjectSpace
 
 class PacmanEnv(gym.Env):
     '''
-    Pacman is a multi-agent game: one pacman agent and a configurable number of ghost agents.
-    Each agent takes turns playing one move, first pacman, then the ghosts. The state updates
-    after each move. The reward is the difference in score, so the reward is from the
-    perspective of pacman, not the ghosts.
+    Pacman is a multi-agent game involving one pacman agent and a 
+    number of ghosts determined by the board `layout` and `max_ghosts`. 
+    Each agent takes turns playing one move, first pacman, then the ghosts. Each agent
+    has an index, `agent_idx`, starting from 0 with pacman. After every action, 
+    the environment state updates and the `agent_idx` changes to the next one. 
+    
+    It is possible to query for the actions that are possible for an agent in a
+    state, using `getPossibleActions`.
+    
+    The reward is the difference in score, between one turn and the next, 
+    so the reward is from the perspective of pacman, not the ghost agents.
+    This reward differs from the Berkeley CS188 project, where the reward is the
+    difference between the current score and the score when pacman last acted.
     '''
     metadata = {'render.modes': ['human']}
 
@@ -52,7 +61,7 @@ class PacmanEnv(gym.Env):
         self.display_initialized = False
         self.null_display = textDisplay.NullGraphics()
         if quiet_graphics:
-            self.display = null_display
+            self.display = self.null_display
         elif text_graphics:
             textDisplay.SLEEP_TIME = frame_time
             self.display = textDisplay.PacmanGraphics()
@@ -91,11 +100,13 @@ class PacmanEnv(gym.Env):
             self.display, quiet, self.catch_exceptions)
         self.agent_idx = 0 # pacman moves first
 
+        # initialize display when resetting, for agents that
+        # use the display internally.
         if initialize_display:
             self.display.initialize(self.game.state.data)
             self.display_initialized = True
 
-        return self.game.state
+        return self.game.state.deepCopy()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -135,12 +146,15 @@ class PacmanEnv(gym.Env):
         self.game.rules.process(self.game.state, self.game)
         
         done = self.game.gameOver # set by rules/game.state during rules.process
-        info = {} if not done else {'game': self.game} # return game for recording
+        info = {} if not done else {
+            'game': self.game,
+            'layout': self.layout,
+        } # return game for recording
         
         # It's the next agent's move
         self.agent_idx = (self.agent_idx + 1) % self.num_agents
 
-        return (next_state, reward, done, info)
+        return (next_state.deepCopy(), reward, done, info)
 
     def render(self, mode='human'):
         '''
@@ -153,8 +167,20 @@ class PacmanEnv(gym.Env):
 
     def getPossibleActions(self, state=None, agent_idx=None):
         '''
-        state: defaults to current environment state.
-        agent_idx: defaults to current environment actor.
+        Pacman is a multi-agent game. By default, getPossibleActions
+        returns the legal actions for the current agent (`agent_idx`)
+        in the current state.
+        
+        This means that for Q-learning, if the q-values of an agent
+        are updated after calling step(), they might get the
+        wrong actions.
+        
+        One solution is for the game loop to track the agent id manually
+        or by checking `env.agent_idx`
+        
+        
+        state: defaults to current state.
+        agent_idx: defaults to current agent index.
         '''
         if agent_idx is None:
             idx = self.agent_idx
